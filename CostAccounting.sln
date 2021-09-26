@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31624.102
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CostAccounting", "ElectronicScheduleOfClasses\CostAccounting.csproj", "{82F71009-E6F1-4662-89A3-ECA5D2817ABD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{82F71009-E6F1-4662-89A3-ECA5D2817ABD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{82F71009-E6F1-4662-89A3-ECA5D2817ABD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{82F71009-E6F1-4662-89A3-ECA5D2817ABD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{82F71009-E6F1-4662-89A3-ECA5D2817ABD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CC8A8176-DA80-47C1-8620-6AE9F2F86A13}
+	EndGlobalSection
+EndGlobal
