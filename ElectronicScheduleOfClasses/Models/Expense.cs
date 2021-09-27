@@ -18,7 +18,7 @@ namespace CostAccounting.Models
         }
         public double Cost { get; set; }
         public string Category { get; set; }
-        public string Date { get => DateTime.ToString("dd.MM.yy"); }
+        public string Date { get => DateTime.Date.ToString("yyyy.MM.dd"); }
         public DateTime DateTime { set; get; }
     }
 }

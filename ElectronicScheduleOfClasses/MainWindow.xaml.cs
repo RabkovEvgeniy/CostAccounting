@@ -21,9 +21,11 @@ namespace CostAccounting
 {
     public partial class MainWindow : Window
     {
+        private UserQueryFacade _queryFacade;
         public MainWindow()
         {
             InitializeComponent();
+            _queryFacade = new UserQueryFacade();
             _expenses = new List<Expense>();
             GetAllExpensesFromBD();
         }
@@ -47,17 +49,18 @@ namespace CostAccounting
                     _expenses.Add(new Expense(cost, category, date));
                 }
             }
+
             expensesDataGrid.ItemsSource = _expenses;
         }
 
-        private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             using (SqlConnection _sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["LocalMSSQLDATABASE"].ConnectionString))
             {
-                await _sqlConnection.OpenAsync();
+                 _sqlConnection.OpenAsync();
 
                 SqlCommand deleteAllValuesOfTableExpensesSQLCommand = new SqlCommand(DELETE_ALL_VALUES_OF_TABLE_EXPENSES_SQL_QUERY, _sqlConnection);
-                await deleteAllValuesOfTableExpensesSQLCommand.ExecuteNonQueryAsync();
+                 deleteAllValuesOfTableExpensesSQLCommand.ExecuteNonQueryAsync();
 
                 StringBuilder insertAllExspensesIntoExpensesTableSQLQuery = new StringBuilder();
                 foreach (var item in _expenses)
@@ -67,7 +70,7 @@ namespace CostAccounting
 
                 SqlCommand insertAllExpensesIntoExpensesTableCommand
                     = new SqlCommand(insertAllExspensesIntoExpensesTableSQLQuery.ToString(), _sqlConnection);
-                await insertAllExpensesIntoExpensesTableCommand.ExecuteNonQueryAsync();
+                insertAllExpensesIntoExpensesTableCommand.ExecuteNonQueryAsync();
             }
         }
 
@@ -78,10 +81,25 @@ namespace CostAccounting
         private string InsertExpenseSQLQuery(Expense expense) => $"INSERT INTO [expenses] ([cost],[category],[date]) VALUES" +
             $" ({expense.Cost},'{expense.Category}','{expense.DateTime.ToString("yyyy-MM-dd")}');";
 
-        private void CreateButton_Click(object sender, RoutedEventArgs e)
+        private async void CreateButton_Click(object sender, RoutedEventArgs e)
         {
-            _expenses.Add(new Expense(Convert.ToDouble(costTextBox.Text), categoryTextBox.Text, datePicker.SelectedDate ?? DateTime.Now));
-            expensesDataGrid.Items.Refresh();
+            try
+            {
+                double cost = Convert.ToDouble(costTextBox.Text);
+                string category = categoryTextBox.Text;
+                DateTime date = datePicker.SelectedDate ?? DateTime.Now;
+
+                Expense createdExpense = new Expense(cost, category, date);
+
+                await _queryFacade.CreateExpenseRecordAsync(createdExpense);
+
+                _expenses.Add(createdExpense);
+                expensesDataGrid.Items.Refresh();
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void RemoveButton_Click(object sender, RoutedEventArgs e)
@@ -91,10 +109,12 @@ namespace CostAccounting
                 MessageBox.Show("Выберете строки!");
                 return;
             }
+
             foreach (var item in expensesDataGrid.SelectedItems)
             {
                 _expenses.Remove((Expense)item);
             }
+
             expensesDataGrid.Items.Refresh();
         }
 
