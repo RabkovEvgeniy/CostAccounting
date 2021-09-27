@@ -14,16 +14,18 @@ namespace CostAccounting
         private const string COST_PARAMETER_NAME = "@cost";
         private const string CATEGORY_PARAMETER_NAME = "@category";
         private const string DATE_PARAMETER_NAME = "@date";
+        private const string ID_PARAMETER_NAME = "@id";
 
         private readonly string _insertExpenseSqlQuery = "INSERT INTO [expenses] ([cost],[category],[date]) VALUES" +
             $" ({COST_PARAMETER_NAME},{CATEGORY_PARAMETER_NAME},{DATE_PARAMETER_NAME});";
         private readonly string _getAllExpenseSqlQuery = "SELECT [expenses].[id], [expenses].[cost], [expenses].[category], [expenses].[date] " +
             "FROM [expenses]";
-
+        private readonly string _deleteExpenseSqlQuery = $"DELETE FROM [expenses] WHERE [expenses].[id] = {ID_PARAMETER_NAME}";
 
 
         private SqlCommand _insertExpenseSqlCommand;
         private SqlCommand _getAllExpenseSqlCommand;
+        private SqlCommand _deleteExpenseSqlCommand;
 
         public UserQueryFacade() 
         {
@@ -33,6 +35,9 @@ namespace CostAccounting
             _insertExpenseSqlCommand.Parameters.Add(new SqlParameter(COST_PARAMETER_NAME,System.Data.SqlDbType.Float));
             _insertExpenseSqlCommand.Parameters.Add(new SqlParameter(CATEGORY_PARAMETER_NAME, System.Data.SqlDbType.NVarChar, 10));
             _insertExpenseSqlCommand.Parameters.Add(new SqlParameter(DATE_PARAMETER_NAME, System.Data.SqlDbType.Date));
+
+            _deleteExpenseSqlCommand = new SqlCommand(_deleteExpenseSqlQuery);
+            _deleteExpenseSqlCommand.Parameters.Add(new SqlParameter(ID_PARAMETER_NAME, System.Data.SqlDbType.Int));
         }
 
         public async Task CreateExpenseRecordAsync(Expense expense) 
@@ -76,6 +81,20 @@ namespace CostAccounting
             }
 
             return queryResult;
+        }
+
+        public async Task DeleteExpenseAsync(int id) 
+        {
+            using (SqlConnection sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["LocalMSSQLDATABASE"].ConnectionString))
+            {
+                await sqlConnection.OpenAsync();
+                _deleteExpenseSqlCommand.Connection = sqlConnection;
+
+                int idParametrIndex = _deleteExpenseSqlCommand.Parameters.IndexOf(ID_PARAMETER_NAME);
+                _deleteExpenseSqlCommand.Parameters[idParametrIndex].Value = id;
+                
+                await _deleteExpenseSqlCommand.ExecuteNonQueryAsync();
+            }
         }
     }
 }

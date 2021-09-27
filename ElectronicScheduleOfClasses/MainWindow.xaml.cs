@@ -63,20 +63,26 @@ namespace CostAccounting
             }
         }
 
-        private void RemoveButton_Click(object sender, RoutedEventArgs e)
+        private async void RemoveButton_Click(object sender, RoutedEventArgs e)
         {
             if (expensesDataGrid.SelectedItems.Count == 0)
             {
-                MessageBox.Show("Выберете строки!");
+                MessageBox.Show("Select the lines", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            foreach (var item in expensesDataGrid.SelectedItems)
-            {
-                _expenses.Remove((Expense)item);
-            }
+            try{
+                foreach (var item in expensesDataGrid.SelectedItems)
+                {
+                    await _queryFacade.DeleteExpenseAsync(((Expense)item).Id);
+                }
 
-            expensesDataGrid.Items.Refresh();
+                expensesDataGrid.ItemsSource = await _queryFacade.GetListOfExpenseRecordsAsync();
+                expensesDataGrid.Items.Refresh();
+            }catch(Exception exception) 
+            {
+                MessageBox.Show(exception.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void EditButton_Click(object sender, RoutedEventArgs e)
