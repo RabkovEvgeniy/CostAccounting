@@ -1,32 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Collections;
+
 using CostAccounting.Models;
-using Microsoft.Data.SqlClient;
-using System.Configuration;
 
 namespace CostAccounting
 {
     public partial class MainWindow : Window
     {
-        private UserQueryFacade _queryFacade;
+        private ExpenseTableOperationsFacade _queryFacade;
         public MainWindow()
         {
             InitializeComponent();
 
-            _queryFacade = new UserQueryFacade();
+            _queryFacade = new ExpenseTableOperationsFacade();
             new Action(async () =>
             {
                 try
@@ -77,7 +63,7 @@ namespace CostAccounting
                 expensesDataGrid.ItemsSource = await _queryFacade.GetListOfExpenseRecordsAsync();
                 expensesDataGrid.Items.Refresh();
             }
-            catch(Exception exception) 
+            catch (Exception exception)
             {
                 MessageBox.Show(exception.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }

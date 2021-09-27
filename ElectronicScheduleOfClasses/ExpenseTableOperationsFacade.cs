@@ -1,45 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using CostAccounting.Models;
-using Microsoft.Data.SqlClient;
 using System.Configuration;
+
+using Microsoft.Data.SqlClient;
+
+using CostAccounting.Models;
 
 namespace CostAccounting
 {
-    class UserQueryFacade
+    class ExpenseTableOperationsFacade
     {
-        private const string COST_PARAMETER_NAME = "@cost";
-        private const string CATEGORY_PARAMETER_NAME = "@category";
-        private const string DATE_PARAMETER_NAME = "@date";
-        private const string ID_PARAMETER_NAME = "@id";
-
-        private readonly string _insertExpenseSqlQuery = "INSERT INTO [expenses] ([cost],[category],[date]) VALUES" +
-            $" ({COST_PARAMETER_NAME},{CATEGORY_PARAMETER_NAME},{DATE_PARAMETER_NAME});";
-        private readonly string _getAllExpenseSqlQuery = "SELECT [expenses].[id], [expenses].[cost], [expenses].[category], [expenses].[date] " +
-            "FROM [expenses]";
-        private readonly string _deleteExpenseSqlQuery = $"DELETE FROM [expenses] WHERE [expenses].[id] = {ID_PARAMETER_NAME}";
-        private readonly string _updateExpenseSqlQuery = $"UPDATE [expenses] \n" +
-            $"SET [cost] = {COST_PARAMETER_NAME}, [category] = {CATEGORY_PARAMETER_NAME}, [date] = {DATE_PARAMETER_NAME}\n" +
-            $"WHERE [id] = {ID_PARAMETER_NAME}";
-
-        private SqlCommand _insertExpenseSqlCommand;
-        private SqlCommand _getAllExpenseSqlCommand;
-        private SqlCommand _deleteExpenseSqlCommand;
-        private SqlCommand _updateExpenseSqlCommand;
-        public UserQueryFacade() 
+        public ExpenseTableOperationsFacade()
         {
             _getAllExpenseSqlCommand = new SqlCommand(_getAllExpenseSqlQuery);
 
-            _insertExpenseSqlCommand = new SqlCommand(_insertExpenseSqlQuery);
-            _insertExpenseSqlCommand.Parameters.Add(new SqlParameter(COST_PARAMETER_NAME,System.Data.SqlDbType.Float));
-            _insertExpenseSqlCommand.Parameters.Add(new SqlParameter(CATEGORY_PARAMETER_NAME, System.Data.SqlDbType.NVarChar, 10));
-            _insertExpenseSqlCommand.Parameters.Add(new SqlParameter(DATE_PARAMETER_NAME, System.Data.SqlDbType.Date));
-
             _deleteExpenseSqlCommand = new SqlCommand(_deleteExpenseSqlQuery);
             _deleteExpenseSqlCommand.Parameters.Add(new SqlParameter(ID_PARAMETER_NAME, System.Data.SqlDbType.Int));
+
+            _insertExpenseSqlCommand = new SqlCommand(_insertExpenseSqlQuery);
+            _insertExpenseSqlCommand.Parameters.Add(new SqlParameter(COST_PARAMETER_NAME, System.Data.SqlDbType.Float));
+            _insertExpenseSqlCommand.Parameters.Add(new SqlParameter(CATEGORY_PARAMETER_NAME, System.Data.SqlDbType.NVarChar, 10));
+            _insertExpenseSqlCommand.Parameters.Add(new SqlParameter(DATE_PARAMETER_NAME, System.Data.SqlDbType.Date));
 
             _updateExpenseSqlCommand = new SqlCommand(_updateExpenseSqlQuery);
             _updateExpenseSqlCommand.Parameters.Add(new SqlParameter(COST_PARAMETER_NAME, System.Data.SqlDbType.Float));
@@ -48,9 +30,9 @@ namespace CostAccounting
             _updateExpenseSqlCommand.Parameters.Add(new SqlParameter(ID_PARAMETER_NAME, System.Data.SqlDbType.Int));
         }
 
-        public async Task CreateExpenseRecordAsync(Expense expense) 
+        public async Task CreateExpenseRecordAsync(Expense expense)
         {
-            using(SqlConnection sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["LocalMSSQLDATABASE"].ConnectionString)) 
+            using (SqlConnection sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["LocalMSSQLDATABASE"].ConnectionString))
             {
                 await sqlConnection.OpenAsync();
                 _insertExpenseSqlCommand.Connection = sqlConnection;
@@ -67,7 +49,7 @@ namespace CostAccounting
             }
         }
 
-        public async Task<List<Expense>> GetListOfExpenseRecordsAsync() 
+        public async Task<List<Expense>> GetListOfExpenseRecordsAsync()
         {
             List<Expense> queryResult = new List<Expense>();
 
@@ -84,14 +66,14 @@ namespace CostAccounting
                     double cost = reader.GetDouble(1);
                     string category = reader.GetString(2);
                     DateTime date = reader.GetDateTime(3);
-                    queryResult.Add(new Expense(id, cost, category, date));
+                    queryResult.Add(new Expense(cost, category, date, id));
                 }
             }
 
             return queryResult;
         }
 
-        public async Task DeleteExpenseAsync(int id) 
+        public async Task DeleteExpenseAsync(int id)
         {
             using (SqlConnection sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["LocalMSSQLDATABASE"].ConnectionString))
             {
@@ -100,12 +82,12 @@ namespace CostAccounting
 
                 int idParametrIndex = _deleteExpenseSqlCommand.Parameters.IndexOf(ID_PARAMETER_NAME);
                 _deleteExpenseSqlCommand.Parameters[idParametrIndex].Value = id;
-                
+
                 await _deleteExpenseSqlCommand.ExecuteNonQueryAsync();
             }
         }
 
-        public async Task UpdateExpenseAsync(int id, Expense expense) 
+        public async Task UpdateExpenseAsync(int id, Expense expense)
         {
             using (SqlConnection sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["LocalMSSQLDATABASE"].ConnectionString))
             {
@@ -125,5 +107,37 @@ namespace CostAccounting
                 await _updateExpenseSqlCommand.ExecuteNonQueryAsync();
             }
         }
+
+        private SqlCommand _insertExpenseSqlCommand;
+        private SqlCommand _getAllExpenseSqlCommand;
+        private SqlCommand _deleteExpenseSqlCommand;
+        private SqlCommand _updateExpenseSqlCommand;
+
+        #region SQL querys
+        private readonly string _insertExpenseSqlQuery = $"INSERT INTO {TABLE_NAME} ({COST_COLUMN_NAME},{CATEGORY_COLUMN_NAME},{DATE_COLUMN_NAME}) VALUES" +
+            $" ({COST_PARAMETER_NAME},{CATEGORY_PARAMETER_NAME},{DATE_PARAMETER_NAME});";
+
+        private readonly string _getAllExpenseSqlQuery = $"SELECT {TABLE_NAME}.{ID_COLUMN_NAME}, {TABLE_NAME}.{COST_COLUMN_NAME}, {TABLE_NAME}.{CATEGORY_COLUMN_NAME}," +
+            $" {TABLE_NAME}.{DATE_COLUMN_NAME} FROM {TABLE_NAME}";
+
+        private readonly string _deleteExpenseSqlQuery = $"DELETE FROM {TABLE_NAME} WHERE {TABLE_NAME}.{ID_COLUMN_NAME} = {ID_PARAMETER_NAME}";
+
+        private readonly string _updateExpenseSqlQuery = $"UPDATE {TABLE_NAME} \n" +
+            $"SET {COST_COLUMN_NAME} = {COST_PARAMETER_NAME}, {CATEGORY_COLUMN_NAME} = {CATEGORY_PARAMETER_NAME}, {DATE_COLUMN_NAME} = {DATE_PARAMETER_NAME}\n" +
+            $"WHERE {ID_COLUMN_NAME} = {ID_PARAMETER_NAME}";
+        #endregion
+
+        #region Consts
+        private const string COST_PARAMETER_NAME = "@cost";
+        private const string CATEGORY_PARAMETER_NAME = "@category";
+        private const string DATE_PARAMETER_NAME = "@date";
+        private const string ID_PARAMETER_NAME = "@id";
+
+        private const string TABLE_NAME = "[expenses]";
+        private const string ID_COLUMN_NAME = "[id]";
+        private const string COST_COLUMN_NAME = "[cost]";
+        private const string CATEGORY_COLUMN_NAME = "[category]";
+        private const string DATE_COLUMN_NAME = "[date]";
+        #endregion
     }
 }
