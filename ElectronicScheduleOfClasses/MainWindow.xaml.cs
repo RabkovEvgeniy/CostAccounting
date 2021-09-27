@@ -25,56 +25,15 @@ namespace CostAccounting
         public MainWindow()
         {
             InitializeComponent();
+
             _queryFacade = new UserQueryFacade();
-            _expenses = new List<Expense>();
-            GetAllExpensesFromBD();
+            new Action (async () =>
+            {
+                expensesDataGrid.ItemsSource = await _queryFacade.GetListOfExpenseRecordsAsync();
+            }).Invoke();
         }
 
         private List<Expense> _expenses;
-
-        private async void GetAllExpensesFromBD()
-        {
-            using (SqlConnection _sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["LocalMSSQLDATABASE"].ConnectionString))
-            {
-                await _sqlConnection.OpenAsync();
-
-                SqlCommand getAllExpensesSQLCommand = new SqlCommand(GET_ALL_EXPENSES_SQL_QUERY, _sqlConnection);
-                SqlDataReader reader = await getAllExpensesSQLCommand.ExecuteReaderAsync();
-
-                while (await reader.ReadAsync())
-                {
-                    double cost = reader.GetDouble(1);
-                    string category = reader.GetString(2);
-                    DateTime date = reader.GetDateTime(3);
-                    _expenses.Add(new Expense(cost, category, date));
-                }
-            }
-
-            expensesDataGrid.ItemsSource = _expenses;
-        }
-
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            using (SqlConnection _sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["LocalMSSQLDATABASE"].ConnectionString))
-            {
-                 _sqlConnection.OpenAsync();
-
-                SqlCommand deleteAllValuesOfTableExpensesSQLCommand = new SqlCommand(DELETE_ALL_VALUES_OF_TABLE_EXPENSES_SQL_QUERY, _sqlConnection);
-                 deleteAllValuesOfTableExpensesSQLCommand.ExecuteNonQueryAsync();
-
-                StringBuilder insertAllExspensesIntoExpensesTableSQLQuery = new StringBuilder();
-                foreach (var item in _expenses)
-                {
-                    insertAllExspensesIntoExpensesTableSQLQuery.AppendLine(InsertExpenseSQLQuery(item));
-                }
-
-                SqlCommand insertAllExpensesIntoExpensesTableCommand
-                    = new SqlCommand(insertAllExspensesIntoExpensesTableSQLQuery.ToString(), _sqlConnection);
-                insertAllExpensesIntoExpensesTableCommand.ExecuteNonQueryAsync();
-            }
-        }
-
-        private const string GET_ALL_EXPENSES_SQL_QUERY = "SELECT * FROM [expenses]";
 
         private const string DELETE_ALL_VALUES_OF_TABLE_EXPENSES_SQL_QUERY = "DELETE [expenses]";
 
@@ -92,8 +51,7 @@ namespace CostAccounting
                 Expense createdExpense = new Expense(cost, category, date);
 
                 await _queryFacade.CreateExpenseRecordAsync(createdExpense);
-
-                _expenses.Add(createdExpense);
+                expensesDataGrid.ItemsSource = await _queryFacade.GetListOfExpenseRecordsAsync();
                 expensesDataGrid.Items.Refresh();
             }
             catch (Exception exception)

@@ -17,11 +17,18 @@ namespace CostAccounting
 
         private readonly string _insertExpenseSqlQuery = "INSERT INTO [expenses] ([cost],[category],[date]) VALUES" +
             $" ({COST_PARAMETER_NAME},{CATEGORY_PARAMETER_NAME},{DATE_PARAMETER_NAME});";
+        private readonly string _getAllExpenseSqlQuery = "SELECT [expenses].[id], [expenses].[cost], [expenses].[category], [expenses].[date] " +
+            "FROM [expenses]";
+
+
 
         private SqlCommand _insertExpenseSqlCommand;
+        private SqlCommand _getAllExpenseSqlCommand;
 
         public UserQueryFacade() 
         {
+            _getAllExpenseSqlCommand = new SqlCommand(_getAllExpenseSqlQuery);
+
             _insertExpenseSqlCommand = new SqlCommand(_insertExpenseSqlQuery);
             _insertExpenseSqlCommand.Parameters.Add(new SqlParameter(COST_PARAMETER_NAME,System.Data.SqlDbType.Float));
             _insertExpenseSqlCommand.Parameters.Add(new SqlParameter(CATEGORY_PARAMETER_NAME, System.Data.SqlDbType.NVarChar, 10));
@@ -45,6 +52,30 @@ namespace CostAccounting
 
                 await _insertExpenseSqlCommand.ExecuteNonQueryAsync();
             }
+        }
+
+        public async Task<List<Expense>> GetListOfExpenseRecordsAsync() 
+        {
+            List<Expense> queryResult = new List<Expense>();
+
+            using (SqlConnection sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["LocalMSSQLDATABASE"].ConnectionString))
+            {
+                await sqlConnection.OpenAsync();
+
+                _getAllExpenseSqlCommand.Connection = sqlConnection;
+                SqlDataReader reader = await _getAllExpenseSqlCommand.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    int id = reader.GetInt32(0);
+                    double cost = reader.GetDouble(1);
+                    string category = reader.GetString(2);
+                    DateTime date = reader.GetDateTime(3);
+                    queryResult.Add(new Expense(id, cost, category, date));
+                }
+            }
+
+            return queryResult;
         }
     }
 }
