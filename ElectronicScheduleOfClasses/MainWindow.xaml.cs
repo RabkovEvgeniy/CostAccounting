@@ -27,18 +27,21 @@ namespace CostAccounting
             InitializeComponent();
 
             _queryFacade = new UserQueryFacade();
-            new Action (async () =>
+            new Action(async () =>
             {
-                expensesDataGrid.ItemsSource = await _queryFacade.GetListOfExpenseRecordsAsync();
+                try
+                {
+                    expensesDataGrid.ItemsSource = await _queryFacade.GetListOfExpenseRecordsAsync();
+                }
+                catch (Exception exception)
+                {
+                    MessageBox.Show(exception.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Application.Current.Shutdown();
+                }
             }).Invoke();
         }
 
         private List<Expense> _expenses;
-
-        private const string DELETE_ALL_VALUES_OF_TABLE_EXPENSES_SQL_QUERY = "DELETE [expenses]";
-
-        private string InsertExpenseSQLQuery(Expense expense) => $"INSERT INTO [expenses] ([cost],[category],[date]) VALUES" +
-            $" ({expense.Cost},'{expense.Category}','{expense.DateTime.ToString("yyyy-MM-dd")}');";
 
         private async void CreateButton_Click(object sender, RoutedEventArgs e)
         {
