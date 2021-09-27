@@ -41,11 +41,10 @@ namespace CostAccounting
 
                 while (await reader.ReadAsync())
                 {
-                    int id = reader.GetInt32(0);
                     double cost = reader.GetDouble(1);
                     string category = reader.GetString(2);
                     DateTime date = reader.GetDateTime(3);
-                    _expenses.Add(new Expense(id, cost, category, date));
+                    _expenses.Add(new Expense(cost, category, date));
                 }
             }
             expensesDataGrid.ItemsSource = _expenses;
@@ -81,13 +80,7 @@ namespace CostAccounting
 
         private void CreateButton_Click(object sender, RoutedEventArgs e)
         {
-            
-            _expenses.Add(new Expense()
-            {
-                Category = categoryTextBox.Text,
-                Cost = Convert.ToDouble(costTextBox.Text),
-                DateTime = datePicker.SelectedDate ?? DateTime.Now
-            });
+            _expenses.Add(new Expense(Convert.ToDouble(costTextBox.Text), categoryTextBox.Text, datePicker.SelectedDate ?? DateTime.Now));
             expensesDataGrid.Items.Refresh();
         }
 
@@ -104,6 +97,7 @@ namespace CostAccounting
             }
             expensesDataGrid.Items.Refresh();
         }
+
         private void EditButton_Click(object sender, RoutedEventArgs e)
         {
             if (expensesDataGrid.SelectedItems.Count != 1)
@@ -117,6 +111,5 @@ namespace CostAccounting
             selectedItem.DateTime = datePicker.SelectedDate ?? DateTime.Now;
             expensesDataGrid.Items.Refresh();
         }
-
     }
 }
