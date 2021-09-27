@@ -21,12 +21,14 @@ namespace CostAccounting
         private readonly string _getAllExpenseSqlQuery = "SELECT [expenses].[id], [expenses].[cost], [expenses].[category], [expenses].[date] " +
             "FROM [expenses]";
         private readonly string _deleteExpenseSqlQuery = $"DELETE FROM [expenses] WHERE [expenses].[id] = {ID_PARAMETER_NAME}";
-
+        private readonly string _updateExpenseSqlQuery = $"UPDATE [expenses] \n" +
+            $"SET [cost] = {COST_PARAMETER_NAME}, [category] = {CATEGORY_PARAMETER_NAME}, [date] = {DATE_PARAMETER_NAME}\n" +
+            $"WHERE [id] = {ID_PARAMETER_NAME}";
 
         private SqlCommand _insertExpenseSqlCommand;
         private SqlCommand _getAllExpenseSqlCommand;
         private SqlCommand _deleteExpenseSqlCommand;
-
+        private SqlCommand _updateExpenseSqlCommand;
         public UserQueryFacade() 
         {
             _getAllExpenseSqlCommand = new SqlCommand(_getAllExpenseSqlQuery);
@@ -38,6 +40,12 @@ namespace CostAccounting
 
             _deleteExpenseSqlCommand = new SqlCommand(_deleteExpenseSqlQuery);
             _deleteExpenseSqlCommand.Parameters.Add(new SqlParameter(ID_PARAMETER_NAME, System.Data.SqlDbType.Int));
+
+            _updateExpenseSqlCommand = new SqlCommand(_updateExpenseSqlQuery);
+            _updateExpenseSqlCommand.Parameters.Add(new SqlParameter(COST_PARAMETER_NAME, System.Data.SqlDbType.Float));
+            _updateExpenseSqlCommand.Parameters.Add(new SqlParameter(CATEGORY_PARAMETER_NAME, System.Data.SqlDbType.NVarChar, 10));
+            _updateExpenseSqlCommand.Parameters.Add(new SqlParameter(DATE_PARAMETER_NAME, System.Data.SqlDbType.Date));
+            _updateExpenseSqlCommand.Parameters.Add(new SqlParameter(ID_PARAMETER_NAME, System.Data.SqlDbType.Int));
         }
 
         public async Task CreateExpenseRecordAsync(Expense expense) 
@@ -94,6 +102,27 @@ namespace CostAccounting
                 _deleteExpenseSqlCommand.Parameters[idParametrIndex].Value = id;
                 
                 await _deleteExpenseSqlCommand.ExecuteNonQueryAsync();
+            }
+        }
+
+        public async Task UpdateExpenseAsync(int id, Expense expense) 
+        {
+            using (SqlConnection sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["LocalMSSQLDATABASE"].ConnectionString))
+            {
+                await sqlConnection.OpenAsync();
+                _updateExpenseSqlCommand.Connection = sqlConnection;
+
+                int costParametrIndex = _updateExpenseSqlCommand.Parameters.IndexOf(COST_PARAMETER_NAME);
+                int categoryParametrIndex = _updateExpenseSqlCommand.Parameters.IndexOf(CATEGORY_PARAMETER_NAME);
+                int dateParametrIndex = _updateExpenseSqlCommand.Parameters.IndexOf(DATE_PARAMETER_NAME);
+                int idParametrIndex = _updateExpenseSqlCommand.Parameters.IndexOf(ID_PARAMETER_NAME);
+
+                _updateExpenseSqlCommand.Parameters[costParametrIndex].Value = expense.Cost;
+                _updateExpenseSqlCommand.Parameters[categoryParametrIndex].Value = expense.Category;
+                _updateExpenseSqlCommand.Parameters[dateParametrIndex].Value = expense.DateTime;
+                _updateExpenseSqlCommand.Parameters[idParametrIndex].Value = id;
+
+                await _updateExpenseSqlCommand.ExecuteNonQueryAsync();
             }
         }
     }

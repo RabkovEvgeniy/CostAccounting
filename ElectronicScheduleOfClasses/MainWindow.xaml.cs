@@ -41,8 +41,6 @@ namespace CostAccounting
             }).Invoke();
         }
 
-        private List<Expense> _expenses;
-
         private async void CreateButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -51,9 +49,8 @@ namespace CostAccounting
                 string category = categoryTextBox.Text;
                 DateTime date = datePicker.SelectedDate ?? DateTime.Now;
 
-                Expense createdExpense = new Expense(cost, category, date);
+                await _queryFacade.CreateExpenseRecordAsync(new Expense(cost, category, date));
 
-                await _queryFacade.CreateExpenseRecordAsync(createdExpense);
                 expensesDataGrid.ItemsSource = await _queryFacade.GetListOfExpenseRecordsAsync();
                 expensesDataGrid.Items.Refresh();
             }
@@ -71,32 +68,45 @@ namespace CostAccounting
                 return;
             }
 
-            try{
+            try
+            {
                 foreach (var item in expensesDataGrid.SelectedItems)
                 {
                     await _queryFacade.DeleteExpenseAsync(((Expense)item).Id);
                 }
-
                 expensesDataGrid.ItemsSource = await _queryFacade.GetListOfExpenseRecordsAsync();
                 expensesDataGrid.Items.Refresh();
-            }catch(Exception exception) 
+            }
+            catch(Exception exception) 
             {
                 MessageBox.Show(exception.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private void EditButton_Click(object sender, RoutedEventArgs e)
+        private async void EditButton_Click(object sender, RoutedEventArgs e)
         {
             if (expensesDataGrid.SelectedItems.Count != 1)
             {
-                MessageBox.Show("Выберете 1 строку!");
+                MessageBox.Show("Select one lines", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning); ;
                 return;
             }
-            Expense selectedItem = (Expense)expensesDataGrid.SelectedItem;
-            selectedItem.Category = categoryTextBox.Text;
-            selectedItem.Cost = Convert.ToDouble(costTextBox.Text);
-            selectedItem.DateTime = datePicker.SelectedDate ?? DateTime.Now;
-            expensesDataGrid.Items.Refresh();
+
+            try
+            {
+                double cost = Convert.ToDouble(costTextBox.Text);
+                string category = categoryTextBox.Text;
+                DateTime date = datePicker.SelectedDate ?? DateTime.Now;
+                int id = ((Expense)expensesDataGrid.SelectedItem).Id;
+
+                await _queryFacade.UpdateExpenseAsync(id, new Expense(cost, category, date));
+
+                expensesDataGrid.ItemsSource = await _queryFacade.GetListOfExpenseRecordsAsync();
+                expensesDataGrid.Items.Refresh();
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(exception.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }
