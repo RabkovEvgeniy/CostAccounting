@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using System.IO;
 
 using CostAccounting.Models;
 
@@ -7,17 +8,17 @@ namespace CostAccounting
 {
     public partial class MainWindow : Window
     {
-        private ExpenseTableOperationsFacade _queryFacade;
+        private ExpenseTableOperationsFacade _dbOperations;
         public MainWindow()
         {
             InitializeComponent();
 
-            _queryFacade = new ExpenseTableOperationsFacade();
+            _dbOperations = new ExpenseTableOperationsFacade();
             new Action(async () =>
             {
                 try
                 {
-                    expensesDataGrid.ItemsSource = await _queryFacade.GetListOfExpenseRecordsAsync();
+                    expensesDataGrid.ItemsSource = await _dbOperations.GetListOfExpenseRecordsAsync();
                 }
                 catch (Exception exception)
                 {
@@ -35,9 +36,9 @@ namespace CostAccounting
                 string category = categoryTextBox.Text;
                 DateTime date = datePicker.SelectedDate ?? DateTime.Now;
 
-                await _queryFacade.CreateExpenseRecordAsync(new Expense(cost, category, date));
+                await _dbOperations.CreateExpenseRecordAsync(new Expense(cost, category, date));
 
-                expensesDataGrid.ItemsSource = await _queryFacade.GetListOfExpenseRecordsAsync();
+                expensesDataGrid.ItemsSource = await _dbOperations.GetListOfExpenseRecordsAsync();
                 expensesDataGrid.Items.Refresh();
             }
             catch (Exception exception)
@@ -58,9 +59,9 @@ namespace CostAccounting
             {
                 foreach (var item in expensesDataGrid.SelectedItems)
                 {
-                    await _queryFacade.DeleteExpenseAsync(((Expense)item).Id);
+                    await _dbOperations.DeleteExpenseAsync(((Expense)item).Id);
                 }
-                expensesDataGrid.ItemsSource = await _queryFacade.GetListOfExpenseRecordsAsync();
+                expensesDataGrid.ItemsSource = await _dbOperations.GetListOfExpenseRecordsAsync();
                 expensesDataGrid.Items.Refresh();
             }
             catch (Exception exception)
@@ -84,15 +85,46 @@ namespace CostAccounting
                 DateTime date = datePicker.SelectedDate ?? DateTime.Now;
                 int id = ((Expense)expensesDataGrid.SelectedItem).Id;
 
-                await _queryFacade.UpdateExpenseAsync(id, new Expense(cost, category, date));
+                await _dbOperations.UpdateExpenseAsync(id, new Expense(cost, category, date));
 
-                expensesDataGrid.ItemsSource = await _queryFacade.GetListOfExpenseRecordsAsync();
+                expensesDataGrid.ItemsSource = await _dbOperations.GetListOfExpenseRecordsAsync();
                 expensesDataGrid.Items.Refresh();
             }
             catch (Exception exception)
             {
                 MessageBox.Show(exception.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private async void GenerateScilabScriptMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            StreamWriter fileStream = new StreamWriter($"{AppDomain.CurrentDomain.BaseDirectory}HistogramOfExpensesForTheLastMonth.sce", append:false);
+            
+            await fileStream.WriteLineAsync("clf();");
+            await fileStream.WriteLineAsync($"xtitle(\"Расходы по дням за последний месяц\"," +
+                $"\"c {DateTime.Now.AddMonths(-1).ToString("yyyy.MM.dd")} по {DateTime.Now.ToString("yyyy.MM.dd")}\"," +
+                $"\"Сумма расходов\");");
+
+            await fileStream.WriteAsync("y=[");
+
+            int dayCount = 0;
+            for (DateTime i = DateTime.Now.AddMonths(-1); i <= DateTime.Now; i = i.AddDays(1))
+            {
+                await fileStream.WriteAsync(" " + await _dbOperations.GetSumExpenseOfDateAsync(i));
+                dayCount++;
+            }
+            await fileStream.WriteAsync("];\n");
+            
+            await fileStream.WriteAsync("x=[");
+            for (int i = 1; i <= dayCount; i++)
+            {
+                await fileStream.WriteAsync(" " + i);
+            }
+            await fileStream.WriteAsync("];\n");
+
+            await fileStream.WriteLineAsync("bar(x,y,1);");
+
+            fileStream.Close();
         }
     }
 }

@@ -28,6 +28,9 @@ namespace CostAccounting
             _updateExpenseSqlCommand.Parameters.Add(new SqlParameter(CATEGORY_PARAMETER_NAME, System.Data.SqlDbType.NVarChar, 10));
             _updateExpenseSqlCommand.Parameters.Add(new SqlParameter(DATE_PARAMETER_NAME, System.Data.SqlDbType.Date));
             _updateExpenseSqlCommand.Parameters.Add(new SqlParameter(ID_PARAMETER_NAME, System.Data.SqlDbType.Int));
+
+            _getExpenseSumOfDateSqlCommand = new SqlCommand(_getExpenseSumOfDateSqlQuery);
+            _getExpenseSumOfDateSqlCommand.Parameters.Add(new SqlParameter(DATE_PARAMETER_NAME, System.Data.SqlDbType.Date));
         }
 
         public async Task CreateExpenseRecordAsync(Expense expense)
@@ -108,10 +111,33 @@ namespace CostAccounting
             }
         }
 
+        public async Task<double> GetSumExpenseOfDateAsync(DateTime date) 
+        {
+            using (SqlConnection sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["LocalMSSQLDATABASE"].ConnectionString))
+            {
+                await sqlConnection.OpenAsync();
+                _getExpenseSumOfDateSqlCommand.Connection = sqlConnection;
+                
+                int dateParametrIndex = _getExpenseSumOfDateSqlCommand.Parameters.IndexOf(DATE_PARAMETER_NAME);
+
+                _getExpenseSumOfDateSqlCommand.Parameters[dateParametrIndex].Value = date;
+
+                object result = await _getExpenseSumOfDateSqlCommand.ExecuteScalarAsync();
+
+                if (result is DBNull) 
+                {
+                    return 0;
+                }
+                
+                return (double)result;
+            }
+        }
+
         private SqlCommand _insertExpenseSqlCommand;
         private SqlCommand _getAllExpenseSqlCommand;
         private SqlCommand _deleteExpenseSqlCommand;
         private SqlCommand _updateExpenseSqlCommand;
+        private SqlCommand _getExpenseSumOfDateSqlCommand;
 
         #region SQL querys
         private readonly string _insertExpenseSqlQuery = $"INSERT INTO {TABLE_NAME} ({COST_COLUMN_NAME},{CATEGORY_COLUMN_NAME},{DATE_COLUMN_NAME}) VALUES" +
@@ -125,6 +151,8 @@ namespace CostAccounting
         private readonly string _updateExpenseSqlQuery = $"UPDATE {TABLE_NAME} \n" +
             $"SET {COST_COLUMN_NAME} = {COST_PARAMETER_NAME}, {CATEGORY_COLUMN_NAME} = {CATEGORY_PARAMETER_NAME}, {DATE_COLUMN_NAME} = {DATE_PARAMETER_NAME}\n" +
             $"WHERE {ID_COLUMN_NAME} = {ID_PARAMETER_NAME}";
+
+        private readonly string _getExpenseSumOfDateSqlQuery = $"SELECT SUM({COST_COLUMN_NAME}) FROM {TABLE_NAME} WHERE {DATE_COLUMN_NAME} = {DATE_PARAMETER_NAME};";
         #endregion
 
         #region Consts
